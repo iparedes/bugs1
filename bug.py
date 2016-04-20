@@ -1,6 +1,9 @@
 __author__ = 'nacho'
 
 import copy
+import logging
+
+logger=logging.getLogger('bugs')
 
 # Index of memory blocks and pointer registers
 HEAP=0
@@ -36,7 +39,8 @@ OPS=['RST', # Resets the PC
 ]
 
 class bug:
-    def __init__(self):
+    def __init__(self,id=''):
+        self.id=id
         self._memory=[None]*NBLOCKS
         # Init the memory blocks
         self._memory[STACK]=[0]*MAX_MEM
@@ -46,7 +50,7 @@ class bug:
         self._registers=[0]*NREGS
         # 1-Stack pointer. Points to the head (top empty position) of the stack
         # 2-Program pointer. Points to the next instruction to be executed (or parameter to be read)
-        self._registers[ENER]=ENERGY
+        self._registers[ENER]=ENERGY/2
         self._registers[OFFS]=OFFSPRING
 
 
@@ -57,6 +61,17 @@ class bug:
         b._registers[ENER]=energy
         return b
 
+    def offspring(self):
+        n=self._registers[OFFS]
+        energy=self._registers[ENER]/(n+1)
+        l=[]
+        for i in range(0,n):
+            a=self.copy(energy)
+            l.append(a)
+        self._registers[ENER]=energy
+        return l
+
+
     def _incPC(self,value=1):
         pc=self._registers[CODE]
         pc+=value
@@ -64,6 +79,7 @@ class bug:
             pc-=MAX_MEM
         elif pc<0:
             pc+=MAX_MEM
+        self._registers[CODE]=pc
 
     def PC(self):
         return self._registers[CODE]
@@ -223,7 +239,7 @@ class bug:
             'JMB':    self._opcode_JMB,
         }[op]
         oper()
-
+        logger.debug(self.id+'('+str(self._registers[ENER])+') '+op)
         self._registers[ENER]-=1
 
 
@@ -244,11 +260,11 @@ class bug:
     def mature(self):
         return self._registers[ENER]>=ENERGY
 
-    def offspring(self):
-        return self._registers[OFFS]
-
     def energy(self):
         return self._registers[ENER]
+
+    def feed(self,value):
+        self._registers[ENER]+=value
 
 
 

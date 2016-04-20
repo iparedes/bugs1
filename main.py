@@ -1,5 +1,15 @@
 __author__ = 'nacho'
 
+import logging
+
+logger = logging.getLogger('bugs')
+hdlr=logging.FileHandler('./bugs.log')
+formatter = logging.Formatter('%(asctime)s - %(module)s - %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.DEBUG)
+
+
 import bug
 import world
 
@@ -16,13 +26,12 @@ l=preload('./prog')
 B=bug.bug()
 B.compile(l)
 
-C=B.copy()
 
 W=world.world()
 W.add_hab(B)
-#W.add_hab(C)
 
-while(True):
-    W.step()
+go=True
+while(go):
+    go=W.step()
 
 
