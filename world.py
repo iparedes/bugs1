@@ -145,7 +145,7 @@ class world:
         average=size*MUTRATE/100
         stdev=average*STDDEV/100
         tomut=numpy.random.normal(average,stdev+1)
-        listmut=numpy.random.randint(0,size,size=tomut)
+        listmut=numpy.random.randint(0,size,size=int(tomut))
         bug.mutate(listmut)
 
 

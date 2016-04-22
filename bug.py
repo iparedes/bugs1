@@ -59,25 +59,37 @@ class bug:
 
 
     def copy(self,energy):
+        """
+        :param energy:
+        :return: An exact copy of the parent with the energy set
+        """
         b=copy.deepcopy(self)
         self._registers[ENER]=energy
         b._registers[ENER]=energy
         return b
 
     def offspring(self):
-        try:
-            n=self._registers[OFFS]
+        """
+        Creates as much identical copies as in the OFFS register
+        :return: A list with the offspring
+        """
+        l=[]
+        n=self._registers[OFFS]
+        if n>0:
             energy=self._registers[ENER]/(n+1)
-            l=[]
             for i in range(0,n):
                 a=self.copy(energy)
                 l.append(a)
             self._registers[ENER]=energy
-            return l
-        except:
-            pass
+        return l
 
     def _incPC(self,value=1):
+        """
+        PC points to the next instruction to execute.
+        Increments the PC in value. If reaches MAX_MEM goes to the beginning
+        :param value:
+        :return:
+        """
         pc=self._registers[CODE]
         pc+=value
         if pc>=MAX_MEM:
@@ -87,6 +99,10 @@ class bug:
         self._registers[CODE]=pc
 
     def PC(self):
+        """
+
+        :return: the value of the CODE register (Program Counter)
+        """
         return self._registers[CODE]
 
     def _push(self,S,value):
@@ -96,10 +112,14 @@ class bug:
         :return:
         """
         id=self._registers[S]
+        if id<0:
+            id+=MAX_MEM
+        elif id>=MAX_MEM:
+            ID-=MAX_MEM
         self._memory[S][id]=value
         id+=1
-        if id==MAX_MEM:
-            id=0
+        if id>=MAX_MEM:
+            id-=MAX_MEM
         self._registers[S]=id
 
     def _pop(self,S):
@@ -109,8 +129,8 @@ class bug:
         The popped value (int)
         """
         id=self._registers[S]
-        if id==0:
-            id=MAX_MEM
+        if id<=0:
+            id+=MAX_MEM
         id-=1
         v=self._memory[S][id]
         self._registers[S]=id
@@ -118,6 +138,10 @@ class bug:
         return v
 
     def pop(self):
+        """
+        Pops the value on the top of the general stack
+        :return: the value
+        """
         v=self._pop(STACK)
         return v
 
@@ -185,9 +209,17 @@ class bug:
 
 
     def _opcode_NOP(self):
+        """
+        Does nothing
+        :return:
+        """
         pass
 
     def _opcode_PUSH(self):
+        """
+        Microinstructions to execute PUSH code:
+        :return:
+        """
         pc=self._registers[CODE]
         v=self._memory[CODE][pc]
         self._incPC()
@@ -215,6 +247,11 @@ class bug:
         self._push(STACK,v1+v2)
 
     def compile(self,list):
+        """
+        Converts a list representing a program to opcodes and loads it in CODE memory
+        :param list: One code or parameter in each position
+        :return:
+        """
         id=0
         for i in list:
             try:
@@ -228,6 +265,10 @@ class bug:
             id+=1
 
     def decompile(self):
+        """
+        Dumps the CODE memory to a readable format
+        :return:
+        """
         l=[]
         i=0
         while i<MAX_MEM:
@@ -243,9 +284,17 @@ class bug:
 
 
     def step(self):
+        """
+        Executes the instruction the PC points to.
+        Decreases energy
+        :return:
+        """
         pc=self._registers[CODE]
         op=self._memory[CODE][pc]
-        op=OPS[op]
+        try:
+            op=OPS[op]
+        except:
+            pass
         self._incPC()
 
         oper={
@@ -256,9 +305,9 @@ class bug:
             'ADD':    self._opcode_ADD,
             'JMF':    self._opcode_JMF,
             'JMB':    self._opcode_JMB,
-        }[op]
+        }.get(op,self._opcode_NOP)
         oper()
-        logger.debug(self.id+'('+str(self._registers[ENER])+') '+op)
+        logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
         self._registers[ENER]-=1
 
     def readcomm(self):
@@ -272,6 +321,11 @@ class bug:
         return v
 
     def mutate(self,listmut):
+        """
+        Modifies a random amount (-delta,delta) a list of memory addresses
+        :param listmut: a list of memory addresses to mutate
+        :return:
+        """
         for i in listmut:
             delta=numpy.random.randint(-DELTA,DELTA+1)
             if i<NREGS:
@@ -285,18 +339,39 @@ class bug:
 
 
     def dead(self):
+        """
+
+        :return: true if the bug has no energy left
+        """
         return self._registers[ENER]==0
 
     def mature(self):
+        """
+        If the bug's energy is above the max it is mature to procreate
+        :return: true if the energy is above the max
+        """
         return self._registers[ENER]>=ENERGY
 
     def energy(self):
+        """
+
+        :return: Bug's current amount of energy
+        """
         return self._registers[ENER]
 
     def feed(self,value):
+        """
+        Adds value to the bug's energy
+        :param value: energy to add
+        :return:
+        """
         self._registers[ENER]+=value
 
     def size(self):
+        """
+
+        :return: the bug's total memory addresses including registers
+        """
         return (NBLOCKS*MAX_MEM)+NREGS
 
 
