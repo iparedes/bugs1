@@ -7,8 +7,12 @@ FOODPACK=10
 
 SOWRATE=5
 
+MUTRATE=1 # percentage
+STDDEV=10 # percentage
+
 import random
 import logging
+import numpy.random
 
 logger=logging.getLogger('bugs')
 
@@ -36,7 +40,8 @@ class world:
         self.habcount+=1
         ident=hex(self.habcount)[2:]
         h.bug.id=ident
-        p=(random.randint(0,BOARDSIZE-1),random.randint(0,BOARDSIZE-1))
+        #p=(random.randint(0,BOARDSIZE-1),random.randint(0,BOARDSIZE-1))
+        p=(numpy.random.randint(0,BOARDSIZE),numpy.random.randint(0,BOARDSIZE))
         h.pos=p
         self.habs.append(h)
         logger.debug('Added bug '+ident)
@@ -97,6 +102,7 @@ class world:
             logger.debug('Offspringing '+ident)
             l=b.offspring()
             for i in l:
+                self.mutate(i)
                 self.add_hab(i)
         else:
             if cell.has_food():
@@ -133,4 +139,13 @@ class world:
             y=random.randint(0,BOARDSIZE-1)
 
             self.board[x][y].grow_food()
+
+    def mutate(self,bug):
+        size=bug.size()
+        average=size*MUTRATE/100
+        stdev=average*STDDEV/100
+        tomut=numpy.random.normal(average,stdev+1)
+        listmut=numpy.random.randint(0,size,size=tomut)
+        bug.mutate(listmut)
+
 

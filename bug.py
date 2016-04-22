@@ -2,6 +2,7 @@ __author__ = 'nacho'
 
 import copy
 import logging
+import numpy
 
 logger=logging.getLogger('bugs')
 
@@ -20,12 +21,14 @@ NREGS=10
 # Number of memory blocks
 NBLOCKS=3
 # Size of memory blocks
-MAX_MEM=1000
+MAX_MEM=100
 
 # Max Energy
 ENERGY=100
 # Number of descendants
 OFFSPRING=2
+# Max size of the mutation
+DELTA=3
 
 
 
@@ -62,15 +65,17 @@ class bug:
         return b
 
     def offspring(self):
-        n=self._registers[OFFS]
-        energy=self._registers[ENER]/(n+1)
-        l=[]
-        for i in range(0,n):
-            a=self.copy(energy)
-            l.append(a)
-        self._registers[ENER]=energy
-        return l
-
+        try:
+            n=self._registers[OFFS]
+            energy=self._registers[ENER]/(n+1)
+            l=[]
+            for i in range(0,n):
+                a=self.copy(energy)
+                l.append(a)
+            self._registers[ENER]=energy
+            return l
+        except:
+            pass
 
     def _incPC(self,value=1):
         pc=self._registers[CODE]
@@ -222,6 +227,20 @@ class bug:
             self._memory[CODE][id]=v
             id+=1
 
+    def decompile(self):
+        l=[]
+        i=0
+        while i<MAX_MEM:
+            v=self._memory[CODE][i]
+            s=OPS[v]
+            l.append(s)
+            if s in ('PUSH','JMF','JMB'):
+                i+=1
+                v=self._memory[CODE][i]
+                l.append(str(v))
+            i+=1
+        return l
+
 
     def step(self):
         pc=self._registers[CODE]
@@ -242,8 +261,6 @@ class bug:
         logger.debug(self.id+'('+str(self._registers[ENER])+') '+op)
         self._registers[ENER]-=1
 
-
-
     def readcomm(self):
         """
         Reads the content of the communications register
@@ -253,6 +270,19 @@ class bug:
         v=self._registers[COMM]
         self._registers[COMM]=0
         return v
+
+    def mutate(self,listmut):
+        for i in listmut:
+            delta=numpy.random.randint(-DELTA,DELTA+1)
+            if i<NREGS:
+                # register
+                self._registers[i]+=delta
+            else:
+                i=i-NREGS
+                block=i/MAX_MEM
+                offset=i%MAX_MEM
+                self._memory[block][offset]+=delta
+
 
     def dead(self):
         return self._registers[ENER]==0
@@ -265,6 +295,9 @@ class bug:
 
     def feed(self,value):
         self._registers[ENER]+=value
+
+    def size(self):
+        return (NBLOCKS*MAX_MEM)+NREGS
 
 
 

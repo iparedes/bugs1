@@ -31,7 +31,12 @@ W=world.world()
 W.add_hab(B)
 
 go=True
-while(go):
+while(go and W.cycles<100000):
     go=W.step()
+
+for w in W.habs:
+    l=w.bug.decompile()
+    print l
+    print "----------------------"
 
 

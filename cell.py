@@ -18,3 +18,4 @@ class cell:
 
     def consume_food(self):
         self.food=False
+
