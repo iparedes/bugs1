@@ -5,7 +5,7 @@ BOARDSIZE=50
 # Food per cell
 FOODPACK=10
 
-SOWRATE=0.25
+SOWRATE=1
 
 MUTRATE=10 # percentage
 STDDEV=10 # percentage
@@ -22,11 +22,12 @@ import board
 
 class world:
     def __init__(self):
-        self.habs=[]
-        self.habs_ptr=0
+        self.habs={}
         self.cycles=0
         self.habcount=0
         self.board=board.board(BOARDSIZE,BOARDSIZE)
+        self.deaths=[] # Ident of bugs dead during the cycle
+        self.newborns=[] # Newborns during the cycle
 
 
     def add_hab(self,b):
@@ -36,6 +37,7 @@ class world:
         ident=hex(self.habcount)[2:]
         h.bug.id=ident
 
+
         # tries to generate a free pos randomly
         # WATCH OUT!!
         p=self.rand_pos()
@@ -43,7 +45,8 @@ class world:
             p=self.rand_pos()
 
         h.pos=p
-        self.habs.append(h)
+        #self.habs.append(h)
+        self.habs[ident]=h
 
         self.board.cell(p).set_hab(ident)
         logger.debug('Added bug '+ident)
@@ -105,9 +108,7 @@ class world:
         # This actions are lead by the world, when to be realistic should be part of the behaviour of the bug, but...
         if b.dead():
             logger.debug('Dead bug '+ident)
-            self.habs.remove(hab)
-            #del self.habs[self.habs_ptr]
-            #self.habs_ptr-=1
+            self.deaths.append(ident)
             cell.del_hab()
         elif b.mature():
             # offspring
@@ -115,7 +116,8 @@ class world:
             l=b.offspring()
             for i in l:
                 self.mutate(i)
-                self.add_hab(i)
+                self.newborns.append(i)
+                #self.add_hab(i)
         else:
             if cell.has_food():
                 logger.debug('Feeding '+ident)
@@ -136,24 +138,21 @@ class world:
             else:
                 b.step()
 
-        # self.habs_ptr+=1
-        #
-        # if self.habs_ptr==len(self.habs):
-        #     if self.habs_ptr==0:
-        #         logger.debug('The end of the world')
-        #         return False
-        #     self.cycles+=1
-        #     logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
-        #     self.sow()
-        #     self.habs_ptr=0
 
     def cycle(self):
+        for i in self.deaths:
+            self.habs.pop(i,None)
+        self.deaths=[]
+        for i in self.newborns:
+            self.add_hab(i)
+        self.newborns=[]
         if len(self.habs)==0:
             logger.debug('The end of the world')
             return False
         logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
-        for h in self.habs:
+        for k,h in self.habs.iteritems():
             self.step(h)
+
         self.cycles+=1
         self.sow()
         return True
@@ -162,7 +161,7 @@ class world:
         logger.debug('Sowing...')
         m=BOARDSIZE*BOARDSIZE*SOWRATE/100
         for i in range(0,int(m)):
-            x=numpy.random.randint(0,BOARDSIZE)
+            x=numpy.random.randint(0,BOARDSIZE/5)*5
             y=numpy.random.randint(0,BOARDSIZE)
 
             self.board.cell((x,y)).grow_food()

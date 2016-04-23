@@ -21,7 +21,7 @@ NREGS=10
 # Number of memory blocks
 NBLOCKS=3
 # Size of memory blocks
-MAX_MEM=100
+MAX_MEM=60
 
 # Max Energy
 ENERGY=100
@@ -53,7 +53,8 @@ class bug:
         self._registers=[0]*NREGS
         # 1-Stack pointer. Points to the head (top empty position) of the stack
         # 2-Program pointer. Points to the next instruction to be executed (or parameter to be read)
-        self._registers[ENER]=ENERGY/2
+        self._registers[ENER]=95
+        #self._registers[ENER]=5
         self._registers[OFFS]=OFFSPRING
 
 

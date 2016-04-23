@@ -47,7 +47,8 @@ B.compile(l)
 W=world.world()
 W.add_hab(B)
 
-while(True):
+go=True
+while(go):
     go=W.cycle()
     for y in range(MAPHEIGHT):
         for x in range(MAPWIDTH):
@@ -59,6 +60,9 @@ while(True):
             else:
                 color=BROWN
             pygame.draw.rect(DISPLAYSURF,color,(y*TILESIZE,x*TILESIZE,TILESIZE,TILESIZE))
+
+
+
     pygame.display.update()
     for event in pygame.event.get():
         if event.type==QUIT:
@@ -72,7 +76,11 @@ while(True):
             cell=W.board.cell((mx,my))
             if cell.is_hab():
                 id=cell.hab
-
+                l=W.habs[id].bug.decompile()
+                print "================="
+                for i in l:
+                    print i
+                print "================="
             print str(mx)+","+str(my)
 
 for w in W.habs:
