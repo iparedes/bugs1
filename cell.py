@@ -10,6 +10,8 @@ class cell:
         else:
             self.consume_food()
 
+        self.hab=None
+
     def has_food(self):
         return self.food
 
@@ -18,4 +20,13 @@ class cell:
 
     def consume_food(self):
         self.food=False
+
+    def set_hab(self,val):
+        self.hab=val
+
+    def del_hab(self):
+        self.hab=None
+
+    def is_hab(self):
+        return self.hab!=None
 

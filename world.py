@@ -1,13 +1,13 @@
 __author__ = 'nacho'
 
 #
-BOARDSIZE=10
+BOARDSIZE=50
 # Food per cell
 FOODPACK=10
 
-SOWRATE=5
+SOWRATE=0.25
 
-MUTRATE=1 # percentage
+MUTRATE=10 # percentage
 STDDEV=10 # percentage
 
 import random
@@ -17,8 +17,8 @@ import numpy.random
 logger=logging.getLogger('bugs')
 
 import bug
-import cell
 import hab
+import board
 
 class world:
     def __init__(self):
@@ -26,12 +26,7 @@ class world:
         self.habs_ptr=0
         self.cycles=0
         self.habcount=0
-        self.board=[[cell.cell() for x in range(BOARDSIZE)] for x in range(BOARDSIZE)]
-
-
-    def cell(self,pos):
-        return self.board[pos[0]][pos[1]]
-
+        self.board=board.board(BOARDSIZE,BOARDSIZE)
 
 
     def add_hab(self,b):
@@ -40,11 +35,21 @@ class world:
         self.habcount+=1
         ident=hex(self.habcount)[2:]
         h.bug.id=ident
-        #p=(random.randint(0,BOARDSIZE-1),random.randint(0,BOARDSIZE-1))
-        p=(numpy.random.randint(0,BOARDSIZE),numpy.random.randint(0,BOARDSIZE))
+
+        # tries to generate a free pos randomly
+        # WATCH OUT!!
+        p=self.rand_pos()
+        while self.board.cell(p).is_hab():
+            p=self.rand_pos()
+
         h.pos=p
         self.habs.append(h)
+
+        self.board.cell(p).set_hab(ident)
         logger.debug('Added bug '+ident)
+
+    def rand_pos(self):
+        return numpy.random.randint(0,BOARDSIZE),numpy.random.randint(0,BOARDSIZE)
 
     def new_pos(self,pos,dir):
         """
@@ -85,18 +90,25 @@ class world:
         return (a,b)
 
 
-    def step(self):
+    def step(self,hab):
+        """
+        Steps an inhabitant
+        :param hab:
+        :return:
+        """
         # get current bug
-        b=self.habs[self.habs_ptr].bug
-        pos=self.habs[self.habs_ptr].pos
-        cell=self.cell(pos)
+        b=hab.bug
+        pos=hab.pos
+        cell=self.board.cell(pos)
         ident=b.id
 
         # This actions are lead by the world, when to be realistic should be part of the behaviour of the bug, but...
         if b.dead():
             logger.debug('Dead bug '+ident)
-            del self.habs[self.habs_ptr]
-            self.habs_ptr-=1
+            self.habs.remove(hab)
+            #del self.habs[self.habs_ptr]
+            #self.habs_ptr-=1
+            cell.del_hab()
         elif b.mature():
             # offspring
             logger.debug('Offspringing '+ident)
@@ -115,30 +127,45 @@ class world:
             if op=='MOV':
                     logger.debug('MOV '+ident)
                     v=b.pop()
-                    self.habs[self.habs_ptr].pos=self.new_pos(pos,v)
+                    # WATCH HERE
+                    newpos=self.new_pos(pos,v)
+                    if not self.board.cell(newpos).is_hab():
+                        hab.pos=newpos
+                        self.board.cell(pos).del_hab()
+                        self.board.cell(newpos).set_hab(ident)
             else:
                 b.step()
 
-        self.habs_ptr+=1
-        if self.habs_ptr==len(self.habs):
-            if self.habs_ptr==0:
-                logger.debug('The end of the world')
-                return False
-            self.cycles+=1
-            logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
-            self.sow()
-            self.habs_ptr=0
+        # self.habs_ptr+=1
+        #
+        # if self.habs_ptr==len(self.habs):
+        #     if self.habs_ptr==0:
+        #         logger.debug('The end of the world')
+        #         return False
+        #     self.cycles+=1
+        #     logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
+        #     self.sow()
+        #     self.habs_ptr=0
 
+    def cycle(self):
+        if len(self.habs)==0:
+            logger.debug('The end of the world')
+            return False
+        logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
+        for h in self.habs:
+            self.step(h)
+        self.cycles+=1
+        self.sow()
         return True
 
     def sow(self):
         logger.debug('Sowing...')
         m=BOARDSIZE*BOARDSIZE*SOWRATE/100
-        for i in range(0,m):
-            x=random.randint(0,BOARDSIZE-1)
-            y=random.randint(0,BOARDSIZE-1)
+        for i in range(0,int(m)):
+            x=numpy.random.randint(0,BOARDSIZE)
+            y=numpy.random.randint(0,BOARDSIZE)
 
-            self.board[x][y].grow_food()
+            self.board.cell((x,y)).grow_food()
 
     def mutate(self,bug):
         size=bug.size()

@@ -1,7 +1,5 @@
 __author__ = 'nacho'
 
-import bug as B
-
 
 class hab:
     def __init__(self):

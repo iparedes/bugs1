@@ -115,7 +115,7 @@ class bug:
         if id<0:
             id+=MAX_MEM
         elif id>=MAX_MEM:
-            ID-=MAX_MEM
+            id-=MAX_MEM
         self._memory[S][id]=value
         id+=1
         if id>=MAX_MEM:
@@ -131,6 +131,8 @@ class bug:
         id=self._registers[S]
         if id<=0:
             id+=MAX_MEM
+        elif id>MAX_MEM:
+            id-=MAX_MEM
         id-=1
         v=self._memory[S][id]
         self._registers[S]=id
@@ -273,9 +275,12 @@ class bug:
         i=0
         while i<MAX_MEM:
             v=self._memory[CODE][i]
-            s=OPS[v]
+            try:
+                s=OPS[v]
+            except IndexError:
+                s='NOP'
             l.append(s)
-            if s in ('PUSH','JMF','JMB'):
+            if (s in ('PUSH','JMF','JMB')) and (i<(MAX_MEM-1)):
                 i+=1
                 v=self._memory[CODE][i]
                 l.append(str(v))
