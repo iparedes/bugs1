@@ -161,7 +161,8 @@ class world:
         logger.debug('Sowing...')
         m=BOARDSIZE*BOARDSIZE*SOWRATE/100
         for i in range(0,int(m)):
-            x=numpy.random.randint(0,BOARDSIZE/5)*5
+            #x=numpy.random.randint(0,BOARDSIZE/5)*5
+            x=numpy.random.randint(0,BOARDSIZE)
             y=numpy.random.randint(0,BOARDSIZE)
 
             self.board.cell((x,y)).grow_food()
