@@ -21,7 +21,8 @@ GREEN=(0,205,0)
 BROWN=(153,76,0)
 
 
-RUNNING=True
+RUNNING=False
+STEP=True
 
 logger = logging.getLogger('bugs')
 hdlr=logging.FileHandler('./bugs.log')
@@ -66,7 +67,14 @@ def cont():
     global RUNNING
     RUNNING=True
 
-
+def step():
+    '''\
+    Pauses and Runs one cycle.
+    '''
+    global RUNNING
+    global STEP
+    RUNNING=False
+    STEP=True
 
 
 pygame.init()
@@ -76,7 +84,7 @@ DISPLAYSURF=pygame.display.set_mode((MAPWIDTH*TILESIZE,(MAPHEIGHT*TILESIZE)+150)
 console = pyconsole.Console(
                             DISPLAYSURF, #The surface you want the console to draw on
                             (0,MAPHEIGHT*TILESIZE,MAPWIDTH*TILESIZE,150), #A rectangle defining the size and position of the console
-                            functions={"dump":dump,"pause":pause,"continue":cont}, # Functions for the console
+                            functions={"pause":pause,"continue":cont,"step":step,"dump":dump}, # Functions for the console
                             key_calls={}, # Defines what function Control+char will call, in this case ctrl+d calls sys.exit()
                             syntax={}
                             )
@@ -116,7 +124,7 @@ while(go):
                 print str(mx)+","+str(my)
 
 
-    if RUNNING:
+    if RUNNING or STEP:
         go=W.cycle()
         for y in range(MAPHEIGHT):
             for x in range(MAPWIDTH):
@@ -128,6 +136,8 @@ while(go):
                 else:
                     color=BROWN
                 pygame.draw.rect(DISPLAYSURF,color,(y*TILESIZE,x*TILESIZE,TILESIZE,TILESIZE))
+    if STEP:
+        STEP=False
     console.draw()
     pygame.display.update()
 

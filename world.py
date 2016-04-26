@@ -1,14 +1,14 @@
 __author__ = 'nacho'
 
-#
+# ToDo: Unify BOARDSIZE with MAPWIDTH and MAPHEIGHT
 BOARDSIZE=50
 #BOARDSIZE=100
 # Food per cell
 FOODPACK=10
 
-SOWRATE=1
+SOWRATE=0.25
 
-MUTRATE=10 # percentage
+MUTRATE=1 # percentage
 STDDEV=10 # percentage
 
 import random
