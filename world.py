@@ -2,6 +2,7 @@ __author__ = 'nacho'
 
 #
 BOARDSIZE=50
+#BOARDSIZE=100
 # Food per cell
 FOODPACK=10
 
@@ -107,7 +108,7 @@ class world:
 
         # This actions are lead by the world, when to be realistic should be part of the behaviour of the bug, but...
         if b.dead():
-            logger.debug('Dead bug '+ident)
+            logger.debug('Dead bug '+ident+' at age '+str(b.age))
             self.deaths.append(ident)
             cell.del_hab()
         elif b.mature():
@@ -127,14 +128,39 @@ class world:
             c=b.readcomm()
             op=bug.OPS[c]
             if op=='MOV':
-                    logger.debug('MOV '+ident)
-                    v=b.pop()
-                    # WATCH HERE
-                    newpos=self.new_pos(pos,v)
-                    if not self.board.cell(newpos).is_hab():
-                        hab.pos=newpos
-                        self.board.cell(pos).del_hab()
-                        self.board.cell(newpos).set_hab(ident)
+                # Moves the bug in the direction pointed by the head of the stack
+                logger.debug('MOV '+ident)
+                v=b.pop()
+                # WATCH HERE
+                newpos=self.new_pos(pos,v)
+                if not self.board.cell(newpos).is_hab():
+                    hab.pos=newpos
+                    self.board.cell(pos).del_hab()
+                    self.board.cell(newpos).set_hab(ident)
+            elif op=='MOVA':
+                # Moves the bug away from the direction pointed by the head of the stack
+                logger.debug('MOVA '+ident)
+                v=b.pop()
+                # WATCH HERE
+                v+=4
+                if v>8:
+                    v-=8
+                newpos=self.new_pos(pos,v)
+                if not self.board.cell(newpos).is_hab():
+                    hab.pos=newpos
+                    self.board.cell(pos).del_hab()
+                    self.board.cell(newpos).set_hab(ident)
+            elif op=='SRFD':
+                # Searches for food. Pushes the direction into the stack
+                logger.debug('SRFD '+ident)
+                # ToDo: bug sets initial position
+                for i in range(1,9):
+                    newpos=self.new_pos(pos,i)
+                    c=self.board.cell((newpos))
+                    if c.has_food():
+                        b.push(i)
+                        break
+                b.push(0)
             else:
                 b.step()
 
@@ -174,5 +200,11 @@ class world:
         tomut=numpy.random.normal(average,stdev+1)
         listmut=numpy.random.randint(0,size,size=int(tomut))
         bug.mutate(listmut)
+
+    def dump(self,file):
+        for k,b in self.habs.iteritems():
+            a=b.bug.dump()
+            file.write(a)
+
 
 

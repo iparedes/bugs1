@@ -40,13 +40,33 @@ def preload(fich):
                 L.append(word)
     return L
 
+
+
+def dump():
+    '''\
+    Dumps the bugs contents to dump.log
+    '''
+    global W
+    f=open('./dump.log','w')
+    W.dump(f)
+    f.close()
+
+
 def pause():
+    '''\
+    Pauses the execution.
+    '''
     global RUNNING
     RUNNING=False
 
 def cont():
+    '''\
+    Continues the execution.
+    '''
     global RUNNING
     RUNNING=True
+
+
 
 
 pygame.init()
@@ -56,7 +76,7 @@ DISPLAYSURF=pygame.display.set_mode((MAPWIDTH*TILESIZE,(MAPHEIGHT*TILESIZE)+150)
 console = pyconsole.Console(
                             DISPLAYSURF, #The surface you want the console to draw on
                             (0,MAPHEIGHT*TILESIZE,MAPWIDTH*TILESIZE,150), #A rectangle defining the size and position of the console
-                            functions={"pause":pause,"continue":cont}, # Functions for the console
+                            functions={"dump":dump,"pause":pause,"continue":cont}, # Functions for the console
                             key_calls={}, # Defines what function Control+char will call, in this case ctrl+d calls sys.exit()
                             syntax={}
                             )

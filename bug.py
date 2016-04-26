@@ -36,7 +36,12 @@ OPS=['RST', # Resets the PC
      'NOP',  # NO Operation
      'PUSH', # PUSH n ; Pushes n into the STACK
      'MOV', # Sets the COMM register to MOV
+     'MOVA', # Sets the COMM register to MOV AWAY
+     'SRFD', # Sets the COMM register to SEARCH FOOD. Pushes direction to the stack
+     'SREY', # Sets the COMM register to SEARCH ENEMY. Pushes direction to the stack
      'ADD', # Adds the two numbers in the stack. Stores the result in the stack
+     'MUL', # Multiplies the two numbers in the stack. Stores the result in the stack
+     'DIV', # Pops A, Pops B, Divides A into B. If B is zero does nothing
      'JMF', # JMF n ; Jumps the PC forward n memory addresses
      'JMB', # JMB n ; Jumps the PC backward n memory addresses
 ]
@@ -44,6 +49,7 @@ OPS=['RST', # Resets the PC
 class bug:
     def __init__(self,id=''):
         self.id=id
+        self.age=0
         self._memory=[None]*NBLOCKS
         # Init the memory blocks
         self._memory[STACK]=[0]*MAX_MEM
@@ -121,6 +127,14 @@ class bug:
         if id>=MAX_MEM:
             id-=MAX_MEM
         self._registers[S]=id
+
+    def push(self,value):
+        """
+        Pushes value to the stack S
+        :param value: value to push
+        :return:
+        """
+        self._push(STACK,value)
 
     def _pop(self,S):
         """
@@ -243,10 +257,30 @@ class bug:
     def _opcode_MOV(self):
         self._registers[COMM]=OPS.index('MOV')
 
+    def _opcode_MOVA(self):
+        self._registers[COMM]=OPS.index('MOVA')
+
+    def _opcode_SRFD(self):
+        self._registers[COMM]=OPS.index('SRFD')
+
+    def _opcode_SREY(self):
+        self._registers[COMM]=OPS.index('SREY')
+
     def _opcode_ADD(self):
         v1=self._pop(STACK)
         v2=self._pop(STACK)
         self._push(STACK,v1+v2)
+
+    def _opcode_MUL(self):
+        v1=self._pop(STACK)
+        v2=self._pop(STACK)
+        self._push(STACK,v1*v2)
+
+    def _opcode_DIV(self):
+        v1=self._pop(STACK)
+        v2=self._pop(STACK)
+        if v2!=0:
+            self._push(STACK,v1/v2)
 
     def compile(self,list):
         """
@@ -279,11 +313,11 @@ class bug:
                 s=OPS[v]
             except IndexError:
                 s='NOP'
-            l.append(s)
             if (s in ('PUSH','JMF','JMB')) and (i<(MAX_MEM-1)):
                 i+=1
                 v=self._memory[CODE][i]
-                l.append(str(v))
+                s=s+' '+str(v)
+            l.append(s)
             i+=1
         return l
 
@@ -307,13 +341,19 @@ class bug:
             'NOP':    self._opcode_NOP,
             'PUSH':   self._opcode_PUSH,
             'MOV':    self._opcode_MOV,
+            'MOVA':   self._opcode_MOVA,
+            'SRFD':   self._opcode_SRFD,
+            'SREY':   self._opcode_SREY,
             'ADD':    self._opcode_ADD,
+            'MUL':    self._opcode_MUL,
+            'DIV':    self._opcode_DIV,
             'JMF':    self._opcode_JMF,
             'JMB':    self._opcode_JMB,
         }.get(op,self._opcode_NOP)
         oper()
         logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
         self._registers[ENER]-=1
+        self.age+=1
 
     def readcomm(self):
         """
@@ -378,6 +418,17 @@ class bug:
         :return: the bug's total memory addresses including registers
         """
         return (NBLOCKS*MAX_MEM)+NREGS
+
+    def dump(self):
+        a='Id: '+str(self.id)+'\n'
+        a+='Age: '+str(self.age)+'\n'
+        a+='=============\n'
+        l=self.decompile()
+        for i in l:
+            a+=i
+            a+='\n'
+        a+='\n'
+        return a
 
 
 
