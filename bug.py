@@ -35,6 +35,12 @@ DELTA=3
 OPS=['RST', # Resets the PC
      'NOP',  # NO Operation
      'PUSH', # PUSH n ; Pushes n into the STACK
+     'ST', # ST Reg ; Copy value of register to stack
+     'LD', # LD Reg ; Copy value of stack to register
+     'STM', # STM Address ; Copy value in stack to heap address
+     'LDM', # LDM Address ; Copy value in heap address to stack
+     'STP', # STP Reg ; Copy value pointed by register to stack
+     'LDP', # LDP Reg ; Copy value in stack to memory address pointed by register
      'MOV', # Sets the COMM register to MOV
      'MOVA', # Sets the COMM register to MOV AWAY
      'SRFD', # Sets the COMM register to SEARCH FOOD. Pushes direction to the stack
@@ -44,6 +50,8 @@ OPS=['RST', # Resets the PC
      'DIV', # Pops A, Pops B, Divides A into B. If B is zero does nothing
      'JMF', # JMF n ; Jumps the PC forward n memory addresses
      'JMB', # JMB n ; Jumps the PC backward n memory addresses
+     'JZ' , # JZ address ; Jumps to the address in the CODE memory if stack is zero
+     'JNZ' , # JNZ address ; Jumps to the address in the CODE memory if stack is not zero
 ]
 
 class bug:
@@ -251,6 +259,24 @@ class bug:
         v=self._memory[CODE][pc]
         self._incPC(-v)
 
+    def _opcode_JZ(self):
+        pc=self._registers[CODE]
+        address=self._memory[CODE][pc]
+        self._incPC()
+        v=self._pop(STACK)
+        if v==0:
+            address = address % MAX_MEM
+            self._memory[CODE][pc]=address
+
+    def _opcode_JNZ(self):
+        pc=self._registers[CODE]
+        address=self._memory[CODE][pc]
+        self._incPC()
+        v=self._pop(STACK)
+        if v!=0:
+            address = address % MAX_MEM
+            self._memory[CODE][pc]=address
+
     def _opcode_RST(self):
         self._registers[CODE]=0
 
@@ -281,6 +307,89 @@ class bug:
         v2=self._pop(STACK)
         if v2!=0:
             self._push(STACK,v1/v2)
+
+    def _opcode_ST(self):
+        """
+        Reads a register. Normalizes the register.
+        Pushes the value of register to the stack.
+        :return:
+        """
+        pc=self._registers[CODE]
+        reg=self._memory[CODE][pc]
+        self._incPC()
+        reg = reg % NREGS
+        v=self._registers[reg]
+        self._push(STACK,v)
+
+    def _opcode_LD(self):
+        """
+        Reads a register. Normalizes the register.
+        Loads in the register the head of the stack
+        :return:
+        """
+        pc=self._registers[CODE]
+        reg=self._memory[CODE][pc]
+        self._incPC()
+        reg= reg % NREGS
+        v=self._pop(STACK)
+        self._registers[reg]=v
+
+    def _opcode_STM(self):
+        """
+        Reads an address of the heap.
+        Copy to that address the value in the stack.
+        :return:
+        """
+        pc=self._registers[CODE]
+        address=self._memory[CODE][pc]
+        self._incPC()
+        address = address % MAX_MEM
+        v=self._memory[HEAP][address]
+        self._push(STACK,v)
+
+    def _opcode_LDM(self):
+        """
+        Reads an address of the heap.
+        Copy the value in the stack to that address
+        :return:
+        """
+        pc=self._registers[CODE]
+        address=self._memory[CODE][pc]
+        self._incPC()
+        address = address % MAX_MEM
+        v=self._pop(STACK)
+        self._memory[HEAP][address]=v
+
+    def _opcode_STP(self):
+        """
+        Reads a register. Looks the value in the heap pointed by the register
+        Pushes to stack
+        :return:
+        """
+        pc=self._registers[CODE]
+        reg=self._memory[CODE][pc]
+        self._incPC()
+        reg= reg % NREGS
+        pointer=self._registers[reg]
+        pointer = pointer % MAX_MEM
+        v=self._memory[HEAP][pointer]
+        self._push(STACK,v)
+
+
+    def _opcode_LDP(self):
+        """
+        Reads a register. Copies the stack to the heap address pointed by register
+        :return:
+        """
+        pc=self._registers[CODE]
+        reg=self._memory[CODE][pc]
+        self._incPC()
+        reg= reg % NREGS
+        pointer=self._registers[reg]
+        pointer = pointer % MAX_MEM
+        v=self._pop(STACK)
+        self._memory[HEAP][pointer]=v
+
 
     def compile(self,list):
         """
@@ -313,7 +422,7 @@ class bug:
                 s=OPS[v]
             except IndexError:
                 s='NOP'
-            if (s in ('PUSH','JMF','JMB')) and (i<(MAX_MEM-1)):
+            if (s in ('PUSH','JMF','JMB','ST','LD','LDM','STM','LDP','STP','JZ','JNZ')) and (i<(MAX_MEM-1)):
                 i+=1
                 v=self._memory[CODE][i]
                 s=s+' '+str(v)
@@ -340,6 +449,12 @@ class bug:
             'RST':    self._opcode_RST,
             'NOP':    self._opcode_NOP,
             'PUSH':   self._opcode_PUSH,
+            'ST':     self._opcode_ST,
+            'LD':     self._opcode_LD,
+            'STM':    self._opcode_STM,
+            'LDM':    self._opcode_LDM,
+            'STP':    self._opcode_STP,
+            'LDP':    self._opcode_LDP,
             'MOV':    self._opcode_MOV,
             'MOVA':   self._opcode_MOVA,
             'SRFD':   self._opcode_SRFD,
@@ -349,6 +464,8 @@ class bug:
             'DIV':    self._opcode_DIV,
             'JMF':    self._opcode_JMF,
             'JMB':    self._opcode_JMB,
+            'JZ':     self._opcode_JZ,
+            'JNZ':    self._opcode_JNZ,
         }.get(op,self._opcode_NOP)
         oper()
         logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))

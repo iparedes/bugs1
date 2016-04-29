@@ -10,15 +10,23 @@ import bug
 import world
 
 
-MAPWIDTH=50
-MAPHEIGHT=50
+TILESWIDTH=50
+TILESHEIGHT=50
 TILESIZE=10
+MAPWIDTH=TILESWIDTH*TILESIZE
+MAPHEIGHT=TILESHEIGHT*TILESIZE
+MARGIN=4
+
+CONSOLEHEIGHT=150
+INFOWIDTH=75
 
 RED=(255,0,0)
 ORANGE=(255,165,0)
 YELLOW=(255,255,0)
 GREEN=(0,205,0)
 BROWN=(153,76,0)
+WHITE=(255,255,255)
+BLACK=(0,0,0)
 
 
 RUNNING=False
@@ -78,12 +86,12 @@ def step():
 
 
 pygame.init()
-DISPLAYSURF=pygame.display.set_mode((MAPWIDTH*TILESIZE,(MAPHEIGHT*TILESIZE)+150))
+DISPLAYSURF=pygame.display.set_mode((MAPWIDTH+INFOWIDTH,MAPHEIGHT+CONSOLEHEIGHT))
 
 
 console = pyconsole.Console(
                             DISPLAYSURF, #The surface you want the console to draw on
-                            (0,MAPHEIGHT*TILESIZE,MAPWIDTH*TILESIZE,150), #A rectangle defining the size and position of the console
+                            (0,MAPHEIGHT,MAPWIDTH+INFOWIDTH,CONSOLEHEIGHT), #A rectangle defining the size and position of the console
                             functions={"pause":pause,"continue":cont,"step":step,"dump":dump}, # Functions for the console
                             key_calls={}, # Defines what function Control+char will call, in this case ctrl+d calls sys.exit()
                             syntax={}
@@ -110,7 +118,7 @@ while(go):
         if event.type==MOUSEBUTTONDOWN:
             # Watchout swap rows,cols to match x,y
             y,x=event.pos
-            if (x<MAPHEIGHT*TILESIZE) and (y<MAPWIDTH*TILESIZE):
+            if (x<MAPHEIGHT) and (y<MAPWIDTH):
                 mx=x/TILESIZE
                 my=y/TILESIZE
                 cell=W.board.cell((mx,my))
@@ -126,8 +134,8 @@ while(go):
 
     if RUNNING or STEP:
         go=W.cycle()
-        for y in range(MAPHEIGHT):
-            for x in range(MAPWIDTH):
+        for y in range(TILESHEIGHT):
+            for x in range(TILESWIDTH):
                 a=W.board.cell((x,y))
                 if a.is_hab():
                     color=YELLOW
@@ -138,6 +146,33 @@ while(go):
                 pygame.draw.rect(DISPLAYSURF,color,(y*TILESIZE,x*TILESIZE,TILESIZE,TILESIZE))
     if STEP:
         STEP=False
+
+    text=console.font.render("Cycle:",1,WHITE)
+    textpos=text.get_rect()
+    DISPLAYSURF.blit(text,(MAPWIDTH+MARGIN,MARGIN))
+    y=textpos.bottom+MARGIN
+
+    text=console.font.render(str(W.cycles),1,WHITE)
+    textpos=text.get_rect()
+    textpos=textpos.move((MAPWIDTH+MARGIN,y))
+    pygame.draw.rect(DISPLAYSURF,BLACK,textpos)
+    DISPLAYSURF.blit(text,(textpos.x,textpos.y))
+    y=textpos.bottom+MARGIN
+
+    text=console.font.render("Bugs #:",1,WHITE)
+    textpos=text.get_rect()
+    DISPLAYSURF.blit(text,(MAPWIDTH+MARGIN,y))
+    y+=textpos.bottom+MARGIN
+
+    t=str(len(W.habs))
+    text=console.font.render(t,1,WHITE)
+    textpos=text.get_rect()
+    textpos.width=INFOWIDTH
+    textpos=textpos.move((MAPWIDTH+MARGIN,y))
+    pygame.draw.rect(DISPLAYSURF,BLACK,textpos)
+    DISPLAYSURF.blit(text,(textpos.x,textpos.y))
+    y=textpos.bottom+MARGIN
+
     console.draw()
     pygame.display.update()
 
