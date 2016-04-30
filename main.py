@@ -8,29 +8,9 @@ import logging
 
 import bug
 import world
+from constants import *
 
 
-TILESWIDTH=50
-TILESHEIGHT=50
-TILESIZE=10
-MAPWIDTH=TILESWIDTH*TILESIZE
-MAPHEIGHT=TILESHEIGHT*TILESIZE
-MARGIN=4
-
-CONSOLEHEIGHT=150
-INFOWIDTH=75
-
-RED=(255,0,0)
-ORANGE=(255,165,0)
-YELLOW=(255,255,0)
-GREEN=(0,205,0)
-BROWN=(153,76,0)
-WHITE=(255,255,255)
-BLACK=(0,0,0)
-
-
-RUNNING=False
-STEP=True
 
 logger = logging.getLogger('bugs')
 hdlr=logging.FileHandler('./bugs.log')
@@ -53,7 +33,7 @@ def preload(fich):
 
 def dump():
     '''\
-    Dumps the bugs contents to dump.log
+    Dumps bugs contents to dump.log
     '''
     global W
     f=open('./dump.log','w')
@@ -87,8 +67,6 @@ def step():
 
 pygame.init()
 DISPLAYSURF=pygame.display.set_mode((MAPWIDTH+INFOWIDTH,MAPHEIGHT+CONSOLEHEIGHT))
-
-
 console = pyconsole.Console(
                             DISPLAYSURF, #The surface you want the console to draw on
                             (0,MAPHEIGHT,MAPWIDTH+INFOWIDTH,CONSOLEHEIGHT), #A rectangle defining the size and position of the console
@@ -139,7 +117,9 @@ while(go):
                 a=W.board.cell((x,y))
                 if a.is_hab():
                     color=YELLOW
-                elif a.has_food():
+                elif a.has_food(CARN):
+                    color=RED
+                elif a.has_food(HERB):
                     color=GREEN
                 else:
                     color=BROWN

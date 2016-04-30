@@ -1,19 +1,11 @@
 __author__ = 'nacho'
 
-# ToDo: Unify BOARDSIZE with MAPWIDTH and MAPHEIGHT
-BOARDSIZE=50
-#BOARDSIZE=100
-# Food per cell
-FOODPACK=10
 
-SOWRATE=0.25
-
-MUTRATE=1 # percentage
-STDDEV=10 # percentage
 
 import random
 import logging
 import numpy.random
+from constants import *
 
 logger=logging.getLogger('bugs')
 
@@ -105,12 +97,13 @@ class world:
         pos=hab.pos
         cell=self.board.cell(pos)
         ident=b.id
+        diet=b.diet()
 
         # This actions are lead by the world, when to be realistic should be part of the behaviour of the bug, but...
         if b.dead():
             logger.debug('Dead bug '+ident+' at age '+str(b.age))
             self.deaths.append(ident)
-            cell.del_hab()
+            cell.del_hab(ident)
         elif b.mature():
             # offspring
             logger.debug('Offspringing '+ident)
@@ -120,10 +113,11 @@ class world:
                 self.newborns.append(i)
                 #self.add_hab(i)
         else:
-            if cell.has_food():
+            if cell.has_food(diet):
                 logger.debug('Feeding '+ident)
-                b.feed(FOODPACK)
-                cell.consume_food()
+                f=cell.consume_food(diet)
+                b.feed(f)
+
             # tests if the bug asks for an action
             c=b.readcomm()
             op=bug.OPS[c]
@@ -135,7 +129,7 @@ class world:
                 newpos=self.new_pos(pos,v)
                 if not self.board.cell(newpos).is_hab():
                     hab.pos=newpos
-                    self.board.cell(pos).del_hab()
+                    self.board.cell(pos).del_hab(ident)
                     self.board.cell(newpos).set_hab(ident)
             elif op=='MOVA':
                 # Moves the bug away from the direction pointed by the head of the stack
@@ -146,10 +140,10 @@ class world:
                 if v>8:
                     v-=8
                 newpos=self.new_pos(pos,v)
-                if not self.board.cell(newpos).is_hab():
-                    hab.pos=newpos
-                    self.board.cell(pos).del_hab()
-                    self.board.cell(newpos).set_hab(ident)
+                #if not self.board.cell(newpos).is_hab():
+                hab.pos=newpos
+                self.board.cell(pos).del_hab(ident)
+                self.board.cell(newpos).set_hab(ident)
             elif op=='SRFD':
                 # Searches for food. Pushes the direction into the stack
                 logger.debug('SRFD '+ident)
@@ -157,7 +151,7 @@ class world:
                 for i in range(1,9):
                     newpos=self.new_pos(pos,i)
                     c=self.board.cell((newpos))
-                    if c.has_food():
+                    if c.has_food(diet):
                         b.push(i)
                         break
                 b.push(0)
