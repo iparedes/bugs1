@@ -21,9 +21,10 @@ class world:
         self.board=board.board(BOARDSIZE,BOARDSIZE)
         self.deaths=[] # Ident of bugs dead during the cycle
         self.newborns=[] # Newborns during the cycle
+        self.graveyard=[] # Dead bugs
 
 
-    def add_hab(self,b):
+    def add_hab(self,b,pos=None):
         h=hab.hab()
         h.bug=b
         self.habcount+=1
@@ -31,11 +32,14 @@ class world:
         h.bug.id=ident
 
 
-        # tries to generate a free pos randomly
-        # WATCH OUT!!
-        p=self.rand_pos()
-        while self.board.cell(p).is_hab():
+        if pos==None:
+            # tries to generate a free pos randomly
+            # WATCH OUT!!
             p=self.rand_pos()
+            while self.board.cell(p).is_hab():
+                p=self.rand_pos()
+        else:
+            p=pos
 
         h.pos=p
         #self.habs.append(h)
@@ -43,6 +47,7 @@ class world:
 
         self.board.cell(p).set_hab(ident)
         logger.debug('Added bug '+ident)
+
 
     def rand_pos(self):
         return numpy.random.randint(0,BOARDSIZE),numpy.random.randint(0,BOARDSIZE)
@@ -61,13 +66,13 @@ class world:
         # normalizes to an address code
         dir=dir%9
         shift={
-            1: (0,-1),
-            2: (1,-1),
-            3: (1,0),
+            1: (-1,0),
+            2: (-1,1),
+            3: (0,1),
             4: (1,1),
-            5: (0,1),
-            6: (-1,1),
-            7: (-1,0),
+            5: (1,0),
+            6: (1,-1),
+            7: (0,-1),
             8: (-1,-1),
             0: (random.randint(-1,1),random.randint(-1,1)),
         }[dir]
@@ -123,14 +128,14 @@ class world:
             op=bug.OPS[c]
             if op=='MOV':
                 # Moves the bug in the direction pointed by the head of the stack
-                logger.debug('MOV '+ident)
                 v=b.pop()
+                logger.debug('MOV '+str(v)+' '+ident)
                 # WATCH HERE
                 newpos=self.new_pos(pos,v)
-                if not self.board.cell(newpos).is_hab():
-                    hab.pos=newpos
-                    self.board.cell(pos).del_hab(ident)
-                    self.board.cell(newpos).set_hab(ident)
+                #if not self.board.cell(newpos).is_hab():
+                hab.pos=newpos
+                self.board.cell(pos).del_hab(ident)
+                self.board.cell(newpos).set_hab(ident)
             elif op=='MOVA':
                 # Moves the bug away from the direction pointed by the head of the stack
                 logger.debug('MOVA '+ident)
@@ -155,13 +160,54 @@ class world:
                         b.push(i)
                         break
                 b.push(0)
+            elif op=='ATK':
+                # Attacks the other bug. (Only if one on one)
+                l=list(cell.hab)
+                if len(l)==2:
+                    l.remove(ident)
+                    b2=self.habs[l[0]].bug
+                    logger.debug(ident+' ATK '+b2.id)
+                    e1=b.energy()
+                    e2=b2.energy()
+                    if e1>=e2:
+                        logger.debug(ident+' wins')
+                        # Wins the attacking bug
+                        #self.deaths.append(b2.id)
+                        #cell.del_hab(b2.id)
+                        b2.kill()
+                        cell.grow_food(CARN,e2)
+                    else:
+                        # Wins the defending bug
+                        logger.debug(ident+' losses and dies')
+                        #self.deaths.append(ident)
+                        #cell.del_hab(ident)
+                        b.kill()
+                        cell.grow_food(CARN,e1)
+            elif op=='SHR':
+                # Shares energy with the bugs in the same location
+                l=list(cell.hab)
+                neighbors=len(l)-1
+                logger.debug(ident+' SHR')
+                if neighbors>0:
+                    logger.debug(ident+' shares its energy')
+                    # There are neighbors
+                    e=b.energy()
+                    e=e*b.sharing_quote()
+                    b.feed(-e)
+                    # Shares the energy to be transfer among all the neighbors
+                    e=e/l
+                    l.remove(ident)
+                    for ident in l:
+                        b2=self.habs[ident].bug
+                        b2.feed(e)
             else:
                 b.step()
 
 
     def cycle(self):
         for i in self.deaths:
-            self.habs.pop(i,None)
+            b=self.habs.pop(i,None)
+            self.graveyard.append(b.bug)
         self.deaths=[]
         for i in self.newborns:
             self.add_hab(i)
@@ -191,9 +237,10 @@ class world:
         size=bug.size()
         average=size*MUTRATE/100
         stdev=average*STDDEV/100
-        tomut=numpy.random.normal(average,stdev+1)
+        tomut=abs(numpy.random.normal(average,stdev+1))
         listmut=numpy.random.randint(0,size,size=int(tomut))
         bug.mutate(listmut)
+
 
     def dump(self,file):
         for k,b in self.habs.iteritems():

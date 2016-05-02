@@ -11,6 +11,7 @@ COMM=3
 ENER=4
 OFFS=5
 DIET=6
+SHRE=7
 
 
 # Number of registers. The three registers are block pointers (stack, code, heap)
@@ -22,6 +23,10 @@ MAX_MEM=100
 
 # Max Energy
 ENERGY=100
+# Init Energy
+INITENERGY=50
+# Percentage of energy to share
+SHARENERGY=50
 # Number of descendants
 OFFSPRING=2
 # Max size of the mutation
@@ -47,6 +52,8 @@ OPS=['RST', # Resets the PC
      'MOVA', # Sets the COMM register to MOV AWAY
      'SRFD', # Sets the COMM register to SEARCH FOOD. Pushes direction to the stack
      'SREY', # Sets the COMM register to SEARCH ENEMY. Pushes direction to the stack
+     'ATK', # Attacks one bug in the same location
+     'SHR', # Shares energy with bus in the same location
      'ADD', # Adds the two numbers in the stack. Stores the result in the stack
      'MUL', # Multiplies the two numbers in the stack. Stores the result in the stack
      'DIV', # Pops A, Pops B, Divides A into B. If B is zero does nothing
@@ -65,7 +72,8 @@ BOARDSIZE=50
 # Food per cell
 FOODPACK=10
 
-SOWRATE=0.25
+# Percentage of cells growing food per cycle
+SOWRATE=1
 
 MUTRATE=1 # percentage
 STDDEV=10 # percentage
@@ -92,6 +100,10 @@ WHITE=(255,255,255)
 BLACK=(0,0,0)
 
 
+# Controls main loop
+GO=True
+
 RUNNING=False
 STEP=True
-
+# Shows the map
+SCREEN=True

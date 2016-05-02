@@ -9,7 +9,7 @@ class cell:
 
         self.food=[0]*OMNI
 
-        a=random.randint(0,1)
+        a=random.randint(0,2)
         if a==1:
             self.grow_food()
 
@@ -26,8 +26,8 @@ class cell:
                 # If type does not exist, the bug cannot feed
                 return 0
 
-    def grow_food(self):
-        self.food[HERB]=FOODPACK
+    def grow_food(self,type=HERB,value=FOODPACK):
+        self.food[type]=value
 
     def consume_food(self,type):
         if type==OMNI:

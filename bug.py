@@ -21,9 +21,10 @@ class bug:
         self._registers=[0]*NREGS
         # 1-Stack pointer. Points to the head (top empty position) of the stack
         # 2-Program pointer. Points to the next instruction to be executed (or parameter to be read)
-        self._registers[ENER]=95
+        self._registers[ENER]=INITENERGY
         self._registers[OFFS]=OFFSPRING
         self._registers[DIET]=HERB
+        self._registers[SHRE]=SHARENERGY
 
 
 
@@ -72,7 +73,14 @@ class bug:
 
         :return: the value of the CODE register (Program Counter)
         """
-        return self._registers[CODE]
+        pc=self._registers[CODE]
+        if pc<0:
+            pc+=MAX_MEM
+            self._registers[CODE]=pc
+        elif pc>=MAX_MEM:
+            pc = pc % MAX_MEM
+            self._registers[CODE]=pc
+        return pc
 
     def _push(self,S,value):
         """
@@ -199,23 +207,23 @@ class bug:
         Microinstructions to execute PUSH code:
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         v=self._memory[CODE][pc]
         self._incPC()
         self._push(STACK,v)
 
     def _opcode_JMF(self):
-        pc=self._registers[CODE]
+        pc=self.PC()
         v=self._memory[CODE][pc]
         self._incPC(v)
 
     def _opcode_JMB(self):
-        pc=self._registers[CODE]
+        pc=self.PC()
         v=self._memory[CODE][pc]
         self._incPC(-v)
 
     def _opcode_JZ(self):
-        pc=self._registers[CODE]
+        pc=self.PC()
         address=self._memory[CODE][pc]
         self._incPC()
         v=self._pop(STACK)
@@ -224,7 +232,7 @@ class bug:
             self._memory[CODE][pc]=address
 
     def _opcode_JNZ(self):
-        pc=self._registers[CODE]
+        pc=self.PC()
         address=self._memory[CODE][pc]
         self._incPC()
         v=self._pop(STACK)
@@ -246,6 +254,12 @@ class bug:
 
     def _opcode_SREY(self):
         self._registers[COMM]=OPS.index('SREY')
+
+    def _opcode_ATK(self):
+        self._registers[COMM]=OPS.index('ATK')
+
+    def _opcode_SHR(self):
+        self._registers[SHRE]=OPS.index('SHR')
 
     def _opcode_ADD(self):
         v1=self._pop(STACK)
@@ -269,7 +283,7 @@ class bug:
         Pushes the value of register to the stack.
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         reg=self._memory[CODE][pc]
         self._incPC()
         reg = reg % NREGS
@@ -282,7 +296,7 @@ class bug:
         Loads in the register the head of the stack
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         reg=self._memory[CODE][pc]
         self._incPC()
         reg= reg % NREGS
@@ -295,7 +309,7 @@ class bug:
         Copy to that address the value in the stack.
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         address=self._memory[CODE][pc]
         self._incPC()
         address = address % MAX_MEM
@@ -308,7 +322,7 @@ class bug:
         Copy the value in the stack to that address
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         address=self._memory[CODE][pc]
         self._incPC()
         address = address % MAX_MEM
@@ -321,7 +335,7 @@ class bug:
         Pushes to stack
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         reg=self._memory[CODE][pc]
         self._incPC()
         reg= reg % NREGS
@@ -336,7 +350,7 @@ class bug:
         Reads a register. Copies the stack to the heap address pointed by register
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         reg=self._memory[CODE][pc]
         self._incPC()
         reg= reg % NREGS
@@ -344,6 +358,7 @@ class bug:
         pointer = pointer % MAX_MEM
         v=self._pop(STACK)
         self._memory[HEAP][pointer]=v
+
 
 
     def compile(self,list):
@@ -392,7 +407,7 @@ class bug:
         Decreases energy
         :return:
         """
-        pc=self._registers[CODE]
+        pc=self.PC()
         op=self._memory[CODE][pc]
         try:
             op=OPS[op]
@@ -414,6 +429,8 @@ class bug:
             'MOVA':   self._opcode_MOVA,
             'SRFD':   self._opcode_SRFD,
             'SREY':   self._opcode_SREY,
+            'ATK':    self._opcode_ATK,
+            'SHR':    self._opcode_SHR,
             'ADD':    self._opcode_ADD,
             'MUL':    self._opcode_MUL,
             'DIV':    self._opcode_DIV,
@@ -476,6 +493,12 @@ class bug:
         """
         return self._registers[ENER]
 
+    def sharing_quote(self):
+        """
+        :return: the energy share quota of the bug
+        """
+        return self._registers[SHRE]/100
+
     def feed(self,value):
         """
         Adds value to the bug's energy
@@ -483,6 +506,17 @@ class bug:
         :return:
         """
         self._registers[ENER]+=value
+        if self._registers[ENER]<0:
+            self._registers[ENER]=0
+
+    def kill(self):
+        """
+        Sets the energy of the bug to zero
+        :return: the former energy value
+        """
+        v=self._registers[ENER]
+        self._registers[ENER]=0
+        return v
 
     def size(self):
         """
