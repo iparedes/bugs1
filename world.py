@@ -4,6 +4,7 @@ __author__ = 'nacho'
 
 import random
 import logging
+import pickle
 import numpy.random
 from constants import *
 
@@ -18,15 +19,25 @@ class world:
         self.habs={}
         self.cycles=0
         self.habcount=0
+        self.maxpop=0
         self.board=board.board(BOARDSIZE,BOARDSIZE)
         self.deaths=[] # Ident of bugs dead during the cycle
         self.newborns=[] # Newborns during the cycle
         self.graveyard=[] # Dead bugs
 
+        self.sowrate=SOWRATE
+
 
     def add_hab(self,b,pos=None):
         h=hab.hab()
         h.bug=b
+        d=b.diet()
+        if d==HERB:
+            h.color=HERBCOLOR
+        elif d==CARN:
+            h.color=CARNCOLOR
+        else:
+            h.color=OMNICOLOR
         self.habcount+=1
         ident=hex(self.habcount)[2:]
         h.bug.id=ident
@@ -64,6 +75,7 @@ class world:
         :return:
         """
         # normalizes to an address code
+        # watch out this...
         dir=dir%9
         shift={
             1: (-1,0),
@@ -99,6 +111,7 @@ class world:
         """
         # get current bug
         b=hab.bug
+        b.age+=1
         pos=hab.pos
         cell=self.board.cell(pos)
         ident=b.id
@@ -204,6 +217,7 @@ class world:
                 b.step()
 
 
+
     def cycle(self):
         for i in self.deaths:
             b=self.habs.pop(i,None)
@@ -212,7 +226,10 @@ class world:
         for i in self.newborns:
             self.add_hab(i)
         self.newborns=[]
-        if len(self.habs)==0:
+        pop=len(self.habs)
+        if pop>self.maxpop:
+            self.maxpop=pop
+        if pop==0:
             logger.debug('The end of the world')
             return False
         logger.debug('New cycle '+str(self.cycles)+'. '+str(len(self.habs))+' bugs.')
@@ -225,7 +242,7 @@ class world:
 
     def sow(self):
         logger.debug('Sowing...')
-        m=BOARDSIZE*BOARDSIZE*SOWRATE/100
+        m=BOARDSIZE*BOARDSIZE*self.sowrate/1000
         for i in range(0,int(m)):
             #x=numpy.random.randint(0,BOARDSIZE/5)*5
             x=numpy.random.randint(0,BOARDSIZE)
@@ -246,6 +263,24 @@ class world:
         for k,b in self.habs.iteritems():
             a=b.bug.dump()
             file.write(a)
+
+    def save(self,file):
+        """
+        Saves the state of the world in the file
+        :param file:
+        :return:
+        """
+        pickle.dump(self,file)
+
+    def load(self,file):
+        """
+        Loads the state of the world from file
+        :param file:
+        :return: an object with the world
+        """
+        a=pickle.load(file)
+        return a
+
 
 
 

@@ -65,14 +65,14 @@ OPS=['RST', # Resets the PC
 
 # *************** WORLD CONSTANTS ***************
 
-
-BOARDSIZE=50
-#BOARDSIZE=100
+# side of the world
+#BOARDSIZE=50
+BOARDSIZE=200
 
 # Food per cell
 FOODPACK=10
 
-# Percentage of cells growing food per cycle
+# Per thousand of cells growing food per cycle
 SOWRATE=1
 
 MUTRATE=1 # percentage
@@ -81,8 +81,9 @@ STDDEV=10 # percentage
 
 # *************** GUI CONSTANTS ***************
 
-TILESWIDTH=BOARDSIZE
-TILESHEIGHT=BOARDSIZE
+# Dimensions of the map (<=Boardsize)
+TILESWIDTH=50
+TILESHEIGHT=50
 TILESIZE=10
 MAPWIDTH=TILESWIDTH*TILESIZE
 MAPHEIGHT=TILESHEIGHT*TILESIZE
@@ -97,11 +98,17 @@ YELLOW=(255,255,0)
 GREEN=(0,205,0)
 BROWN=(153,76,0)
 WHITE=(255,255,255)
+PINK=(250,20,147)
 BLACK=(0,0,0)
+
+HERBCOLOR=YELLOW
+CARNCOLOR=BLACK
+OMNICOLOR=PINK
 
 
 # Controls main loop
 GO=True
+TERMINATE=False
 
 RUNNING=False
 STEP=True

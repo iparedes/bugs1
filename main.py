@@ -22,6 +22,7 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
 
+coords=(0,0)
 
 
 def preload(fich):
@@ -74,24 +75,51 @@ def screen():
     global SCREEN
     SCREEN=not SCREEN
 
+# ToDo this is not working
 def terminate():
     '''\
     Terminates the world
     '''
-    global GO
-    GO=False
+    global TERMINATE
+    TERMINATE=True
+
+def savew():
+    global W
+
+    f=codecs.open('./world.dat','wb')
+    W.save(f)
+    f.close()
+
+
+def loadw():
+    global W
+
+    f=codecs.open('./world.dat','rb')
+    W=W.load(f)
+    f.close()
+
+def coord(f,c):
+    global coords
+    coords=(f,c)
+
+def sowrate(rate):
+    global W
+    W.sowrate=rate
+
 
 pygame.init()
 DISPLAYSURF=pygame.display.set_mode((MAPWIDTH+INFOWIDTH,MAPHEIGHT+CONSOLEHEIGHT))
 console = pyconsole.Console(
                             DISPLAYSURF, #The surface you want the console to draw on
                             (0,MAPHEIGHT,MAPWIDTH+INFOWIDTH,CONSOLEHEIGHT), #A rectangle defining the size and position of the console
-                            functions={"pause":pause,"cont":cont,"step":step,"dump":dump,"screen":screen,"terminate":terminate}, # Functions for the console
+                            functions={"pause":pause,"cont":cont,"step":step,"dump":dump,"screen":screen, \
+                                       "terminate":terminate,"savew":savew,"loadw":loadw, \
+                                       "coord":coord,"sowrate":sowrate}, # Functions for the console
                             key_calls={}, # Defines what function Control+char will call, in this case ctrl+d calls sys.exit()
                             syntax={}
                             )
 
-l=preload('./prog')
+l=preload('./prog2')
 B=bug.bug()
 B.compile(l)
 
@@ -100,10 +128,9 @@ B.compile(l)
 # #f.write(data_stringB)
 # pickle.dump(B,f)
 #
-#
-# l=preload('./prog3')
-# C=bug.bug()
-# C.compile(l)
+l=preload('./carni')
+C=bug.bug()
+C.compile(l)
 #
 # #data_stringC=pickle.dumps(C)
 # #f.write(data_stringC)
@@ -115,9 +142,9 @@ B.compile(l)
 
 W=world.world()
 W.add_hab(B,(10,20))
-#W.add_hab(C,(10,20))
+W.add_hab(C,(11,20))
 
-while(GO):
+while(GO and not TERMINATE):
 
     console.process_input()
 
@@ -127,6 +154,7 @@ while(GO):
             sys.exit()
         if event.type==MOUSEBUTTONDOWN:
             # Watchout swap rows,cols to match x,y
+            # ToDo FIX offset
             y,x=event.pos
             if (x<MAPHEIGHT) and (y<MAPWIDTH):
                 mx=x/TILESIZE
@@ -134,29 +162,46 @@ while(GO):
                 cell=W.board.cell((mx,my))
                 if cell.is_hab():
                     id=cell.hab
-                    l=W.habs[id].bug.decompile()
-                    print "================="
-                    for i in l:
-                        print i
-                    print "================="
+                    for ident in id:
+                        l=W.habs[ident].bug.decompile()
+                        print "================="
+                        for i in l:
+                            print i
+                        print "================="
                 print str(mx)+","+str(my)
 
 
     if RUNNING or STEP:
-        go=W.cycle()
+        GO=W.cycle()
         if SCREEN:
-            for y in range(TILESHEIGHT):
-                for x in range(TILESWIDTH):
+
+            f1=coords[0]
+            c1=coords[1]
+            f2=f1+TILESHEIGHT
+            c2=c1+TILESWIDTH
+
+            if f2>=BOARDSIZE:
+                f2=BOARDSIZE
+                f1=f2-TILESHEIGHT
+            if c2>=BOARDSIZE:
+                c2=BOARDSIZE
+                c1=c2-TILESHEIGHT
+
+
+
+            for y in range(f1,f2):
+                for x in range(c1,c2):
                     a=W.board.cell((x,y))
                     if a.is_hab():
-                        color=YELLOW
+                        id=a.hab[0]
+                        color=W.habs[id].color
                     elif a.has_food(CARN):
                         color=RED
                     elif a.has_food(HERB):
                         color=GREEN
                     else:
                         color=BROWN
-                    pygame.draw.rect(DISPLAYSURF,color,(y*TILESIZE,x*TILESIZE,TILESIZE,TILESIZE))
+                    pygame.draw.rect(DISPLAYSURF,color,((y-f1)*TILESIZE,(x-c1)*TILESIZE,TILESIZE,TILESIZE))
     if STEP:
         STEP=False
 
@@ -192,12 +237,18 @@ while(GO):
 
 L=W.graveyard
 M=[x.bug for x in W.habs.values()]
-oldest=max(L+M,key=attrgetter('age'))
-print "Oldest bug:"
-print "Id: "+oldest.id
-print "Age: "+str(oldest.age)
-l=oldest.decompile()
-print l
+N=L+M
+totpop=len(N)
+print "The world ended at "+str(W.cycles)+" cycles."
+print "A total of "+str(totpop)+" bugs lived during this time."
+if totpop>0:
+    oldest=max(L+M,key=attrgetter('age'))
+    print "Oldest bug:"
+    print "Id: "+oldest.id
+    print "Age: "+str(oldest.age)
+    print "Maxpop: "+str(W.maxpop)
+    l=oldest.decompile()
+    print l
 
 
 

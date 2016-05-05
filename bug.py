@@ -3,6 +3,7 @@ __author__ = 'nacho'
 import copy
 import logging
 import numpy
+import pickle
 from constants import *
 
 logger=logging.getLogger('bugs')
@@ -45,12 +46,16 @@ class bug:
         """
         l=[]
         n=self._registers[OFFS]
+        logger.debug(self.id+' offspringing '+str(n))
         if n>0:
             energy=self._registers[ENER]/(n+1)
             for i in range(0,n):
                 a=self.copy(energy)
+                a.age=0
                 l.append(a)
             self._registers[ENER]=energy
+        # Because offspringing also has a 
+        self._registers[ENER]-=1
         return l
 
     def _incPC(self,value=1):
@@ -442,7 +447,8 @@ class bug:
         oper()
         logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
         self._registers[ENER]-=1
-        self.age+=1
+        # Age is controlled by the world
+        #self.age+=1
 
     def readcomm(self):
         """
@@ -539,6 +545,22 @@ class bug:
         a+='\n'
         return a
 
+    def save(self,file):
+        """
+        saves a bug to the file
+        :param file:
+        :return:
+        """
+        pickle.dump(self,file)
+
+    def load(self,file):
+        """
+        Loads a bug from a file
+        :param file:
+        :return: the bug
+        """
+        a=pickle.load(file)
+        return a
 
 
 
